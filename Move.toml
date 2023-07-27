@@ -3,9 +3,15 @@ name = "move_project"
 version = "0.0.0"
 
 [dependencies]
-AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "mainnet" }
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "testnet" }
+
+[dependencies.HippoAggregator]
+git = 'https://github.com/hippospace/hippo-agg-interface.git'
+rev = ''
+subdir = ''
 
 [addresses]
-my_addrx = "0x42"
+swap_account = "0x42"
 std = "0x1"
-stake__balance = "0x123"
+hippo_aggregator = "0x89576037b3cc0b89645ea393a47787bb348272c76d6941c574b053672b848039"
+

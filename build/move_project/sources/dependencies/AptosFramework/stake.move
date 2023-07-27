@@ -1,23 +1,22 @@
-/**
- * Validator lifecycle:
- * 1. Prepare a validator node set up and call stake::initialize_validator
- * 2. Once ready to deposit stake (or have funds assigned by a staking service in exchange for ownership capability),
- * call stake::add_stake (or *_with_cap versions if called from the staking service)
- * 3. Call stake::join_validator_set (or _with_cap version) to join the active validator set. Changes are effective in
- * the next epoch.
- * 4. Validate and gain rewards. The stake will automatically be locked up for a fixed duration (set by governance) and
- * automatically renewed at expiration.
- * 5. At any point, if the validator operator wants to update the consensus key or network/fullnode addresses, they can
- * call stake::rotate_consensus_key and stake::update_network_and_fullnode_addresses. Similar to changes to stake, the
- * changes to consensus key/network/fullnode addresses are only effective in the next epoch.
- * 6. Validator can request to unlock their stake at any time. However, their stake will only become withdrawable when
- * their current lockup expires. This can be at most as long as the fixed lockup duration.
- * 7. After exiting, the validator can either explicitly leave the validator set by calling stake::leave_validator_set
- * or if their stake drops below the min required, they would get removed at the end of the epoch.
- * 8. Validator can always rejoin the validator set by going through steps 2-3 again.
- * 9. An owner can always switch operators by calling stake::set_operator.
- * 10. An owner can always switch designated voter by calling stake::set_designated_voter.
-*/
+///
+/// Validator lifecycle:
+/// 1. Prepare a validator node set up and call stake::initialize_validator
+/// 2. Once ready to deposit stake (or have funds assigned by a staking service in exchange for ownership capability),
+/// call stake::add_stake (or *_with_cap versions if called from the staking service)
+/// 3. Call stake::join_validator_set (or _with_cap version) to join the active validator set. Changes are effective in
+/// the next epoch.
+/// 4. Validate and gain rewards. The stake will automatically be locked up for a fixed duration (set by governance) and
+/// automatically renewed at expiration.
+/// 5. At any point, if the validator operator wants to update the consensus key or network/fullnode addresses, they can
+/// call stake::rotate_consensus_key and stake::update_network_and_fullnode_addresses. Similar to changes to stake, the
+/// changes to consensus key/network/fullnode addresses are only effective in the next epoch.
+/// 6. Validator can request to unlock their stake at any time. However, their stake will only become withdrawable when
+/// their current lockup expires. This can be at most as long as the fixed lockup duration.
+/// 7. After exiting, the validator can either explicitly leave the validator set by calling stake::leave_validator_set
+/// or if their stake drops below the min required, they would get removed at the end of the epoch.
+/// 8. Validator can always rejoin the validator set by going through steps 2-3 again.
+/// 9. An owner can always switch operators by calling stake::set_operator.
+/// 10. An owner can always switch designated voter by calling stake::set_designated_voter.
 module aptos_framework::stake {
     use std::error;
     use std::features;
@@ -901,7 +900,7 @@ module aptos_framework::stake {
             coin::merge(&mut stake_pool.inactive, pending_inactive_stake);
         };
 
-        // Cap withdraw amount by total ianctive coins.
+        // Cap withdraw amount by total inactive coins.
         withdraw_amount = min(withdraw_amount, coin::value(&stake_pool.inactive));
         if (withdraw_amount == 0) return coin::zero<AptosCoin>();
 
@@ -1041,23 +1040,17 @@ module aptos_framework::stake {
         let validator_perf = borrow_global_mut<ValidatorPerformance>(@aptos_framework);
 
         // Process pending stake and distribute transaction fees and rewards for each currently active validator.
-        let i = 0;
-        let len = vector::length(&validator_set.active_validators);
-        while (i < len) {
-            let validator = vector::borrow(&validator_set.active_validators, i);
+        vector::for_each_ref(&validator_set.active_validators, |validator| {
+            let validator: &ValidatorInfo = validator;
             update_stake_pool(validator_perf, validator.addr, &config);
-            i = i + 1;
-        };
+        });
 
         // Process pending stake and distribute transaction fees and rewards for each currently pending_inactive validator
         // (requested to leave but not removed yet).
-        let i = 0;
-        let len = vector::length(&validator_set.pending_inactive);
-        while (i < len) {
-            let validator = vector::borrow(&validator_set.pending_inactive, i);
+        vector::for_each_ref(&validator_set.pending_inactive, |validator| {
+            let validator: &ValidatorInfo = validator;
             update_stake_pool(validator_perf, validator.addr, &config);
-            i = i + 1;
-        };
+        });
 
         // Activate currently pending_active validators.
         append(&mut validator_set.active_validators, &mut validator_set.pending_active);
@@ -1141,6 +1134,11 @@ module aptos_framework::stake {
 
             validator_index = validator_index + 1;
         };
+
+        if (features::periodical_reward_rate_decrease_enabled()) {
+            // Update rewards rate after reward distribution.
+            staking_config::calculate_and_save_latest_epoch_rewards_rate();
+        };
     }
 
     /// Update individual validator's stake pool
@@ -1163,23 +1161,7 @@ module aptos_framework::stake {
             assume cur_validator_perf.successful_proposals + cur_validator_perf.failed_proposals <= MAX_U64;
         };
         let num_total_proposals = cur_validator_perf.successful_proposals + cur_validator_perf.failed_proposals;
-        let (rewards_rate, rewards_rate_denominator) = if (features::periodical_reward_rate_decrease_enabled()) {
-            let epoch_rewards_rate = staking_config::calculate_and_save_latest_epoch_rewards_rate();
-            if (fixed_point64::is_zero(epoch_rewards_rate)) {
-                (0u64, 1u64)
-            } else {
-                // Maximize denominator for higher precision.
-                // Restriction: nominator <= MAX_REWARDS_RATE && denominator <= MAX_U64
-                let denominator = fixed_point64::divide_u128((MAX_REWARDS_RATE as u128), epoch_rewards_rate);
-                if (denominator > MAX_U64) {
-                    denominator = MAX_U64
-                };
-                let nominator = (fixed_point64::multiply_u128(denominator, epoch_rewards_rate) as u64);
-                (nominator, (denominator as u64))
-            }
-        } else {
-            staking_config::get_reward_rate(staking_config)
-        };
+        let (rewards_rate, rewards_rate_denominator) = staking_config::get_reward_rate(staking_config);
         let rewards_active = distribute_rewards(
             &mut stake_pool.active,
             num_successful_proposals,
@@ -1372,6 +1354,7 @@ module aptos_framework::stake {
     #[test_only]
     use aptos_framework::aptos_coin;
     use aptos_std::bls12381::proof_of_possession_from_bytes;
+    #[test_only]
     use aptos_std::fixed_point64;
 
     #[test_only]
@@ -2465,17 +2448,22 @@ module aptos_framework::stake {
         // For some reason, this epoch is very long. It has been 1 year since genesis when the epoch ends.
         timestamp::fast_forward_seconds(one_year_in_secs - EPOCH_DURATION * 3);
         end_epoch();
-        // Rewards rate has halved. Validator 1 and validator 2 should receive rewards at rewards rate = 0.5% every epoch.
-        assert_validator_state(validator_1_address, 1015, 0, 0, 0, 1);
-        assert_validator_state(validator_2_address, 10150, 0, 0, 0, 0);
+        // Validator 1 and validator 2 should still receive rewards at rewards rate = 1% every epoch. Rewards rate has halved after this epoch.
+        assert_validator_state(validator_1_address, 1020, 0, 0, 0, 1);
+        assert_validator_state(validator_2_address, 10200, 0, 0, 0, 0);
 
         // For some reason, this epoch is also very long. One year passed.
         timestamp::fast_forward_seconds(one_year_in_secs - EPOCH_DURATION);
         end_epoch();
+        // Validator 1 and validator 2 should still receive rewards at rewards rate = 0.5% every epoch. Rewards rate has halved after this epoch.
+        assert_validator_state(validator_1_address, 1025, 0, 0, 0, 1);
+        assert_validator_state(validator_2_address, 10250, 0, 0, 0, 0);
+
+        end_epoch();
         // Rewards rate has halved but cannot become lower than min_rewards_rate.
         // Validator 1 and validator 2 should receive rewards at rewards rate = 0.3% every epoch.
-        assert_validator_state(validator_1_address, 1018, 0, 0, 0, 1);
-        assert_validator_state(validator_2_address, 10180, 0, 0, 0, 0);
+        assert_validator_state(validator_1_address, 1028, 0, 0, 0, 1);
+        assert_validator_state(validator_2_address, 10280, 0, 0, 0, 0);
     }
 
     #[test(aptos_framework = @aptos_framework, validator = @0x123)]
@@ -2592,15 +2580,12 @@ module aptos_framework::stake {
     #[test_only]
     public fun set_validator_perf_at_least_one_block() acquires ValidatorPerformance {
         let validator_perf = borrow_global_mut<ValidatorPerformance>(@aptos_framework);
-        let len = vector::length(&validator_perf.validators);
-        let i = 0;
-        while (i < len) {
-            let validator = vector::borrow_mut(&mut validator_perf.validators, i);
+        vector::for_each_mut(&mut validator_perf.validators, |validator|{
+            let validator: &mut IndividualValidatorPerformance = validator;
             if (validator.successful_proposals + validator.failed_proposals < 1) {
                 validator.successful_proposals = 1;
             };
-            i = i + 1;
-        };
+        });
     }
 
     #[test(aptos_framework = @0x1, validator_1 = @0x123, validator_2 = @0x234)]
