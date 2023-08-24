@@ -1,17 +1,16 @@
 [package]
-name = "move_project"
+name = "swapping"
 version = "0.0.0"
 
-[dependencies]
-AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework", rev = "testnet" }
-
-[dependencies.HippoAggregator]
-git = 'https://github.com/hippospace/hippo-agg-interface.git'
-rev = ''
-subdir = ''
-
 [addresses]
-swap_account = "0x42"
-std = "0x1"
-hippo_aggregator = "0x89576037b3cc0b89645ea393a47787bb348272c76d6941c574b053672b848039"
+swap_account = "8f8c633c0b4910bcb345d4f7327b8a860564b8199a47f6ada076c367da8ffdd8"
 
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet" }
+AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-token", rev = "mainnet" }
+
+[dependencies.AnimeSwapV1]
+local = './v1-core/Swap'
+
+[dependencies.LiquidswapRouterV2]
+local = './liquidswap/liquidswap_router_v2/'
