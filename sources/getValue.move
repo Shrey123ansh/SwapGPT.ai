@@ -3,6 +3,9 @@ module swap_account::AnimeLiquid{
     use liquidswap::router_v2;
     use liquidswap::curves::Uncorrelated;
     use liquidswap::curves::Stable;
+    use cetus_amm::amm_config;
+    use cetus_amm::amm_swap;
+    use cetus_amm::amm_utils;
 
     #[view]
     public fun get_amount_out_Uncorrelated<X, Y>(amount_in: u64): u64 {
@@ -66,11 +69,18 @@ module swap_account::AnimeLiquid{
     let coin_out_val = router_v2::get_amount_out<X, Y, Stable>(amount_in);
     (coin_out_val - (coin_out_val * (fee_bips as u64) / 10000))
     }
-    
 
     #[view]
     public fun get_amount_in_Stable_fee<X, Y>(amount_out: u64,fee_bips: u8): u64 {
     let value = router_v2::get_amount_in<X, Y, Stable>(amount_out);
     (value + (value * (fee_bips as u64) / 10000))// ex: 30 for 0.3%
     }
+    
+    #[view]
+    public fun get_amount_out_cetus_without_fee<X, Y>(amount_a_in: u128): u128 {
+        let (fee_numerator, fee_denominator) = amm_config::get_trade_fee<X, Y>();
+        let (reserve_a, reserve_b) = amm_swap::get_reserves<X, Y>();
+        amm_utils::get_amount_out(amount_a_in, (reserve_a as u128), (reserve_b as u128), fee_numerator, fee_denominator)
+    }
+
 }

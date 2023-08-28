@@ -18,3 +18,5 @@ local = './liquidswap/'
 [dependencies.LiquidswapRouterV2]
 local = './liquidswap/liquidswap_router_v2/'
 
+[dependencies.Cetue-AMM]
+local = './cetus-amm/aptos/'
