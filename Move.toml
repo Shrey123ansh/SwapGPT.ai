@@ -3,7 +3,7 @@ name = "swapping"
 version = "0.0.0"
 
 [addresses]
-swap_account = "8f8c633c0b4910bcb345d4f7327b8a860564b8199a47f6ada076c367da8ffdd8"
+swap_account = "154e7e308687969b9cd7b4f1278e2a45894cd99425bbc08100387a3517de68d8"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet" }
@@ -12,5 +12,9 @@ AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "a
 [dependencies.AnimeSwapV1]
 local = './v1-core/Swap'
 
+[dependencies.Liquidswap]
+local = './liquidswap/'
+
 [dependencies.LiquidswapRouterV2]
 local = './liquidswap/liquidswap_router_v2/'
+
