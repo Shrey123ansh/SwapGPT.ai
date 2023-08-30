@@ -82,5 +82,34 @@ module swap_account::AnimeLiquid{
         let (reserve_a, reserve_b) = amm_swap::get_reserves<X, Y>();
         amm_utils::get_amount_out(amount_a_in, (reserve_a as u128), (reserve_b as u128), fee_numerator, fee_denominator)
     }
+    // 0:"0x1::aptos_coin::AptosCoin"
+    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
+    //100000000 to 5865411 
+    
+    #[view]
+    public fun get_amount_out_cetus_with_fee<X, Y>(amount_a_in: u128,fee_bips: u8): u128 {
+        let (fee_numerator, fee_denominator) = amm_config::get_trade_fee<X, Y>();
+        let (reserve_a, reserve_b) = amm_swap::get_reserves<X, Y>();
+        let value = amm_utils::get_amount_out(amount_a_in, (reserve_a as u128), (reserve_b as u128), fee_numerator, fee_denominator);
+        (value + (value * (fee_bips as u128) / 10000))// ex: 30 for 0.3%
+    }
+    // 0:"0x1::aptos_coin::AptosCoin"
+    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
+    //100000000 to 5865411 
+    
+    #[view]
+    public fun get_amount_in_cetus_without_fee<X, Y>(amount_b_out: u128): u128 {
+        let (fee_numerator, fee_denominator) = amm_config::get_trade_fee<X, Y>();
+        let (reserve_a, reserve_b) = amm_swap::get_reserves<X, Y>();
+        amm_utils::get_amount_out(amount_b_out, (reserve_a as u128), (reserve_b as u128), fee_numerator, fee_denominator)
+    }
+    
+    #[view]
+    public fun get_amount_in_cetus_with_fee<X, Y>(amount_b_out: u128,fee_bips: u8): u128 {
+        let (fee_numerator, fee_denominator) = amm_config::get_trade_fee<X, Y>();
+        let (reserve_a, reserve_b) = amm_swap::get_reserves<X, Y>();
+        let value = amm_utils::get_amount_out(amount_b_out, (reserve_a as u128), (reserve_b as u128), fee_numerator, fee_denominator);
+        (value + (value * (fee_bips as u128) / 10000))// ex: 30 for 0.3%
+    }
 
 }

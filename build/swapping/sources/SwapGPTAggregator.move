@@ -2,12 +2,10 @@
 module swap_account::SwapGPTAggregator{
 
     use aptos_framework::account;
-    // use aptos_framework::coin::Coin;
     use aptos_framework::coin;
     use std::option;
     use std::option::Option;
     use std::signer;
-    // use aptos_framework::timestamp;
 
 const DEX_HIPPO: u8 = 1;
     const DEX_ECONIA: u8 = 2;
@@ -30,33 +28,10 @@ const DEX_HIPPO: u8 = 1;
     const RECEIVER_NOT_REGISTERED_FOR_COIN: u64 = 10;
     const YOU_ARE_NOT_OWNER: u64 = 11;
     const E_OUTPUT_NOT_EQAULS_REQUEST: u64 = 12;
-    
-
-
-    // Emit swap events
-    // struct EventStore has key {
-    //     swap_step_events: EventHandle<SwapStepEvent>,
-    // }
-
-    // struct CoinStore<phantom CoinType> has key {
-    //     balance: coin::Coin<CoinType>
-    // }
 
     struct ModuleData has key {
         signerCapability: account::SignerCapability
     }
-
-    // struct SwapStepEvent has drop, store {
-    //     dex_type: u8,
-    //     pool_type: u64,
-    //     // input coin type
-    //     x_type_info: TypeInfo,
-    //     // output coin type
-    //     y_type_info: TypeInfo,
-    //     input_amount: u64,
-    //     output_amount: u64,
-    //     time_stamp: u64
-    // }
 
     public entry fun init_module_for_fee(admin: &signer) {
         assert!(signer::address_of(admin) == @swap_account, YOU_ARE_NOT_OWNER);
@@ -112,7 +87,13 @@ const DEX_HIPPO: u8 = 1;
         check_and_deposit_opt(from_add, x_remain);
         check_and_deposit_opt(from_add, y_remain);
         check_and_deposit_opt(from_add, z_remain);
-        check_and_deposit_to_address(to_sender, coin_m);
+        
+        if (signer::address_of(from_add) == to_sender) {
+            check_and_deposit(from_add, coin_m);
+        }
+        else{
+            check_and_deposit_to_address(to_sender, coin_m);
+        }
     }
 
 
@@ -504,4 +485,27 @@ const DEX_HIPPO: u8 = 1;
 // [dependencies.Cetue-AMM]
 // local = './cetus-amm/aptos/'
 
+
+
+
+    // Emit swap events
+    // struct EventStore has key {
+    //     swap_step_events: EventHandle<SwapStepEvent>,
+    // }
+
+    // struct CoinStore<phantom CoinType> has key {
+    //     balance: coin::Coin<CoinType>
+    // }
+
+    // struct SwapStepEvent has drop, store {
+    //     dex_type: u8,
+    //     pool_type: u64,
+    //     // input coin type
+    //     x_type_info: TypeInfo,
+    //     // output coin type
+    //     y_type_info: TypeInfo,
+    //     input_amount: u64,
+    //     output_amount: u64,
+    //     time_stamp: u64
+    // }
 
