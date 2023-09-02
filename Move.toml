@@ -3,7 +3,7 @@ name = "swapping"
 version = "0.0.0"
 
 [addresses]
-swap_account = "bd65135bc530d99ba75a2255923164dcef1d52188ec4dde66aae78b9ef926530"
+swap_account = "9da47f04d7a78afdad00fdc6052c9f53900440af998b6599f24e8e71091fb7bb"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet" }
@@ -20,3 +20,6 @@ local = './liquidswap/liquidswap_router_v2/'
 
 [dependencies.Cetue-AMM]
 local = './cetus-amm/aptos/'
+
+[dependencies.PancakeSwap]
+local = './pancake-contracts-move/pancake-swap/'

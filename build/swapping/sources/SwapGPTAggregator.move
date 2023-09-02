@@ -158,6 +158,10 @@ const DEX_HIPPO: u8 = 1;
             let y_out = amm_router::swap<X, Y>(@swap_account, _x_in);
             (option::none(),y_out)
         }
+        else if (_dex_type == DEX_PANCAKE){
+            use pancake::router;
+            (option::none(),router::swap_exact_x_to_y_direct_external<X, Y>(_x_in))
+        }
         else {
             abort E_UNKNOWN_DEX
         }
