@@ -23,11 +23,16 @@ const DEX_HIPPO: u8 = 1;
     const DEX_OBRIC: u8 = 12;
     const E_UNKNOWN_DEX: u64 = 404;
     const E_OUTPUT_LESS_THAN_MINIMUM: u64 = 2;
+    const E_UNSUPPORTED: u64 = 10;
+    const E_UNKNOWN_POOL_TYPE: u64 = 101;
     const E_UNSUPPORTED_NUM_STEPS: u64 = 9;
     const EINSUFFICIENT_BALANCE: u64 = 6;
     const RECEIVER_NOT_REGISTERED_FOR_COIN: u64 = 10;
     const YOU_ARE_NOT_OWNER: u64 = 11;
     const E_OUTPUT_NOT_EQAULS_REQUEST: u64 = 12;
+    const AUX_TYPE_AMM:u64 = 0;
+    const AUX_TYPE_MARKET:u64 = 1;
+    const E_UNSUPPORTED_FIXEDOUT_SWAP:u64 = 101;
 
     struct ModuleData has key {
         signerCapability: account::SignerCapability
@@ -138,7 +143,7 @@ const DEX_HIPPO: u8 = 1;
         _is_x_to_y: bool,
         _x_in: coin::Coin<X>
     ): (Option<coin::Coin<X>>, coin::Coin<Y>){
-        
+        let coin_in_value = coin::value(&_x_in);
         if (_dex_type == DEX_ANIMESWAP) {
             use SwapDeployer::AnimeSwapPoolV1;
             (option::none(), AnimeSwapPoolV1::swap_coins_for_coins(_x_in))
@@ -161,6 +166,43 @@ const DEX_HIPPO: u8 = 1;
         else if (_dex_type == DEX_PANCAKE){
             use pancake::router;
             (option::none(),router::swap_exact_x_to_y_direct_external<X, Y>(_x_in))
+        }
+        else if (_dex_type == DEX_AUX) {
+            if (_pool_type == AUX_TYPE_AMM){
+                use aux::amm;
+                let y_out = coin::zero<Y>();
+                amm::swap_exact_coin_for_coin_mut(
+                    @swap_account,
+                    &mut _x_in,
+                    &mut y_out,
+                    coin_in_value,
+                    0,
+                    false,
+                    0,
+                    0
+                );
+                (option::some(_x_in),y_out)
+            } else if (_pool_type == AUX_TYPE_MARKET){
+                use aux::clob_market;
+                let y_out = coin::zero<Y>();
+                if (_is_x_to_y){
+                    clob_market::place_market_order_mut<X, Y>(
+                        @swap_account,
+                        &mut _x_in,
+                        &mut y_out,
+                        false,
+                        102,// IMMEDIATE_OR_CANCEL in aux::router,
+                        0,
+                        coin_in_value,
+                        0
+                    );
+                } else {
+                    abort E_UNSUPPORTED
+                };
+                (option::some(_x_in),y_out)
+            } else {
+                abort E_UNKNOWN_POOL_TYPE
+            }
         }
         else {
             abort E_UNKNOWN_DEX
@@ -439,10 +481,33 @@ const DEX_HIPPO: u8 = 1;
         amount_out: u64,
         coin_in: coin::Coin<X>,
     ):(coin::Coin<X>,coin::Coin<Y>) {
-        // let _coin_in_value = coin::value<X>(&coin_in);
+        // let coin_in_value = coin::value<X>(&coin_in);
         let (x_remaining,y_out) = if (_dex_type == DEX_PONTEM) {
             use liquidswap::router;
             router::swap_coin_for_exact_coin<X, Y, E>(coin_in, amount_out)
+        }
+        else if (_dex_type == DEX_AUX) {
+            if (_pool_type == AUX_TYPE_AMM){
+                use aux::amm;
+                let coin_out = coin::zero<Y>();
+                amm::swap_coin_for_exact_coin_mut(
+                    @swap_account,
+                    &mut coin_in,
+                    &mut coin_out,
+                    _max_in,
+                    amount_out,
+                    false,
+                    0,
+                    0
+                );
+                (coin_in, coin_out)
+            }
+            else if (_pool_type == AUX_TYPE_MARKET){
+                abort E_UNSUPPORTED_FIXEDOUT_SWAP
+            }
+            else {
+                abort E_UNKNOWN_POOL_TYPE
+            }
         }
         else {
             abort E_UNKNOWN_DEX
@@ -461,20 +526,9 @@ const DEX_HIPPO: u8 = 1;
 
     
 }
-// [dependencies.AnimeSwapV1]
-// git = 'https://github.com/AnimeSwap/v1-core.git'
-// rev = 'v1.0.0'
-// subdir = 'Swap'
-
-// [dependencies.Liquidswap]
-// git = 'https://github.com/pontem-network/liquidswap.git'
-// rev = 'v1.0.0'
-
-// [dependencies.LiquidswapRouterV2]
-// git = 'https://github.com/pontem-network/liquidswap.git'
-// subdir = 'liquidswap_router_v2/'
-// rev = "v1.0.0"
-
+// [dependencies]
+// AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet" }
+// AptosToken = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-token", rev = "mainnet" }
 
 // [dependencies.AnimeSwapV1]
 // local = './v1-core/Swap'
@@ -485,31 +539,11 @@ const DEX_HIPPO: u8 = 1;
 // [dependencies.LiquidswapRouterV2]
 // local = './liquidswap/liquidswap_router_v2/'
 
-
 // [dependencies.Cetue-AMM]
 // local = './cetus-amm/aptos/'
 
+// [dependencies.PancakeSwap]
+// local = './pancake-contracts-move/pancake-swap/'
 
-
-
-    // Emit swap events
-    // struct EventStore has key {
-    //     swap_step_events: EventHandle<SwapStepEvent>,
-    // }
-
-    // struct CoinStore<phantom CoinType> has key {
-    //     balance: coin::Coin<CoinType>
-    // }
-
-    // struct SwapStepEvent has drop, store {
-    //     dex_type: u8,
-    //     pool_type: u64,
-    //     // input coin type
-    //     x_type_info: TypeInfo,
-    //     // output coin type
-    //     y_type_info: TypeInfo,
-    //     input_amount: u64,
-    //     output_amount: u64,
-    //     time_stamp: u64
-    // }
-
+// [dependencies.aux]
+// local = './aux-exchange/aptos/contract/auxexch/'

@@ -8,6 +8,7 @@ module swap_account::AnimeLiquid{
     use cetus_amm::amm_utils;
     use pancake::swap;
     use pancake::swap_utils;
+    use aux::amm;
 
     #[view]
     public fun get_amount_out_Uncorrelated<X, Y>(amount_in: u64): u64 {
@@ -120,6 +121,9 @@ module swap_account::AnimeLiquid{
         let amount_in = swap_utils::get_amount_in(amount_b_out, rin, rout);
         (amount_in)
     }
+    // 0:"0x1::aptos_coin::AptosCoin"
+    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
+    //5000000 to 89352268
     
     #[view]
     public fun get_amount_in_pancake_with_fee<X, Y>(amount_b_out: u64,fee_bips: u8): u64 {
@@ -134,6 +138,9 @@ module swap_account::AnimeLiquid{
         let amount_out = swap_utils::get_amount_out(amount_b_in, rin, rout);
         (amount_out)
     }
+    // 0:"0x1::aptos_coin::AptosCoin"
+    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
+    //1000000 to 5600766 
     
     #[view]
     public fun get_amount_out_pancake_with_fee<X, Y>(amount_b_in: u64,fee_bips: u8): u64 {
@@ -141,5 +148,36 @@ module swap_account::AnimeLiquid{
         let amount_out = swap_utils::get_amount_out(amount_b_in, rin, rout);
         (amount_out - (amount_out * (fee_bips as u64) / 10000))// ex: 30 for 0.3%
     }
+
+    #[view]
+    public fun get_amount_in_Aux_without_fee<X, Y>(amount_b_out: u64): u64 {
+        let amount_in = amm::au_in<X, Y>(amount_b_out);
+        (amount_in)
+    }
+    // 0:"0x1::aptos_coin::AptosCoin"
+    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
+    //5000000 to 000000
+    
+    #[view]
+    public fun get_amount_in_Aux_with_fee<X, Y>(amount_b_out: u64,fee_bips: u8): u64 {
+        let amount_in = amm::au_in<X, Y>(amount_b_out);
+        (amount_in + (amount_in * (fee_bips as u64) / 10000))// ex: 30 for 0.3%
+    }
+    
+    #[view]
+    public fun get_amount_out_Aux_without_fee<X, Y>(amount_b_in: u64): u64 {
+        let amount_out = amm::au_out<X, Y>(amount_b_in);
+        (amount_out)
+    }
+    // 0:"0x1::aptos_coin::AptosCoin"
+    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
+    //1000000 to 000000 
+    
+    #[view]
+    public fun get_amount_out_Aux_with_fee<X, Y>(amount_b_in: u64,fee_bips: u8): u64 {
+        let amount_out = amm::au_out<X, Y>(amount_b_in);
+        (amount_out - (amount_out * (fee_bips as u64) / 10000))// ex: 30 for 0.3%
+    }
+     
 
 }

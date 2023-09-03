@@ -1,9 +1,9 @@
 [package]
-name = "swapping"
-version = "0.0.0"
+name = "SwapGPT"
+version = "0.0.1"
 
 [addresses]
-swap_account = "9da47f04d7a78afdad00fdc6052c9f53900440af998b6599f24e8e71091fb7bb"
+swap_account = "3aae94743a079b28e17ca4e9be6b6b62515221596ee3d6ae0bd88f90706ee2cf"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet" }
@@ -23,3 +23,7 @@ local = './cetus-amm/aptos/'
 
 [dependencies.PancakeSwap]
 local = './pancake-contracts-move/pancake-swap/'
+
+[dependencies.aux]
+local = './aux-exchange/aptos/contract/auxexch/'
+
