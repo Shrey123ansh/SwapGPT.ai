@@ -3,7 +3,7 @@ name = "SwapGPT"
 version = "0.0.1"
 
 [addresses]
-swap_account = "3aae94743a079b28e17ca4e9be6b6b62515221596ee3d6ae0bd88f90706ee2cf"
+swap_account = "726995b84096d166ab8eb78601f96f80cc24bc8dc46140a4697b966bc7fa82f7"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet" }
@@ -26,4 +26,3 @@ local = './pancake-contracts-move/pancake-swap/'
 
 [dependencies.aux]
 local = './aux-exchange/aptos/contract/auxexch/'
-
