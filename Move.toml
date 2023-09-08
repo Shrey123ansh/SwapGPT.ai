@@ -3,7 +3,7 @@ name = "SwapGPT"
 version = "0.0.1"
 
 [addresses]
-swap_account = "726995b84096d166ab8eb78601f96f80cc24bc8dc46140a4697b966bc7fa82f7"
+swap_account = "6d579f1e8dd27b95069ebb53a9bb1f66b9c6c3a369f815d307fc506de05170d3"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet" }

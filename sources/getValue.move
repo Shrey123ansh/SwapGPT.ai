@@ -14,8 +14,6 @@ module swap_account::AnimeLiquid{
     let coin_out_val = router::get_amount_out<X, Y, Uncorrelated>(amount_in);
     (coin_out_val)
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     // 2:"0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12::curves::Uncorrelated"
     //100000000 to 5669811 
 
@@ -24,8 +22,7 @@ module swap_account::AnimeLiquid{
     let value = router::get_amount_in<X, Y, Uncorrelated>(amount_out);
     (value)// ex: 30 for 0.3%
     }
-    // 0:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
-    // 1:"0x1::aptos_coin::AptosCoin"
+    // usdt to apt
     // 2:"0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12::curves::Uncorrelated"
     //5000000 to 285501 
 
@@ -34,8 +31,6 @@ module swap_account::AnimeLiquid{
     let coin_out_val = router::get_amount_out<X, Y, Stable>(amount_in);
     (coin_out_val)
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     // 2:"0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12::curves::Uncorrelated"
     //100000000 to 5538261 
 
@@ -44,8 +39,7 @@ module swap_account::AnimeLiquid{
     let value = router::get_amount_in<X, Y, Stable>(amount_out);
     (value)// ex: 30 for 0.3%
     }
-    // 0:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
-    // 1:"0x1::aptos_coin::AptosCoin"
+    //usdt to aptos
     // 2:"0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12::curves::Uncorrelated"
     //5000000 to 285136 
 
@@ -55,8 +49,6 @@ module swap_account::AnimeLiquid{
     let coin_out_val = router::get_amount_out<X, Y, Uncorrelated>(amount_in);
     (coin_out_val - (coin_out_val * (fee_bips as u64) / 10000))
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     // 2:"0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12::curves::Uncorrelated"
     //100000000 to 5659513 
 
@@ -84,8 +76,6 @@ module swap_account::AnimeLiquid{
         let x_out = amm_router::compute_b_out<X, Y>(amount_a_in, is_forward);
         x_out
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     //100000000 to 5865411 
     
     #[view]
@@ -94,8 +84,6 @@ module swap_account::AnimeLiquid{
         let x_out = amm_router::compute_b_out<X, Y>(amount_a_in, is_forward);
         (x_out - (x_out * (fee_bips as u128) / 10000))// ex: 30 for 0.3%
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     //100000000 to 5865411 
     
     #[view]
@@ -118,8 +106,6 @@ module swap_account::AnimeLiquid{
         let amount_in = swap_utils::get_amount_in(amount_b_out, rin, rout);
         (amount_in)
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     //5000000 to 89352268
     
     #[view]
@@ -135,8 +121,6 @@ module swap_account::AnimeLiquid{
         let amount_out = swap_utils::get_amount_out(amount_b_in, rin, rout);
         (amount_out)
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     //1000000 to 5600766 
     
     #[view]
@@ -151,8 +135,6 @@ module swap_account::AnimeLiquid{
         let amount_in = amm::au_in<X, Y>(amount_b_out);
         (amount_in)
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     //5000000 to 18357475
     
     #[view]
@@ -166,8 +148,6 @@ module swap_account::AnimeLiquid{
         let amount_out = amm::au_out<X, Y>(amount_b_in);
         (amount_out)
     }
-    // 0:"0x1::aptos_coin::AptosCoin"
-    // 1:"0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDT"
     //1000000 to 54493 
     
     #[view]

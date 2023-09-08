@@ -35,15 +35,17 @@ const DEX_HIPPO: u8 = 1;
     const E_UNSUPPORTED_FIXEDOUT_SWAP:u64 = 101;
 
     struct ModuleData has key {
-        signerCapability: account::SignerCapability
+        signerCapability: account::SignerCapability,
+        fee:u8
     }
 
-    public entry fun init_module_for_fee(admin: &signer) {
+    public entry fun init_module_for_fee(admin: &signer, fees:u8) {
         assert!(signer::address_of(admin) == @swap_account, YOU_ARE_NOT_OWNER);
         let (_acc, acc_sig) = account::create_resource_account(admin, b"1bc"); 
 
         move_to(admin, ModuleData {
-            signerCapability:acc_sig
+            signerCapability:acc_sig,
+            fee:fees
         });
     }
 
@@ -65,7 +67,7 @@ const DEX_HIPPO: u8 = 1;
         third_is_x_to_y: bool, // second trade uses normal order
         x_in: u64,
         m_min_out: u64,
-        fee_bips: u8
+        fee_bips0: u8,
 
     // ) acquires EventStore, CoinStore, ModuleData {
     ) acquires ModuleData {
@@ -83,10 +85,13 @@ const DEX_HIPPO: u8 = 1;
             third_is_x_to_y,
             coin_x
         );
-        process_fee(&mut coin_m, fee_bips);
+        process_fee(&mut coin_m, fee_bips0);
         assert!(coin::value(&coin_m) >= m_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
-        add_process_fee(&mut coin_m,m_min_out);
+        let b_store = borrow_global_mut<ModuleData>(@swap_account);
+
+        add_process_fee(&mut coin_m,m_min_out,b_store.fee);
+
         assert!(coin::value(&coin_m) >= m_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
         check_and_deposit_opt(from_add, x_remain);
@@ -100,7 +105,6 @@ const DEX_HIPPO: u8 = 1;
             check_and_deposit_to_address(to_sender, coin_m);
         }
     }
-
 
     public fun swap_direct<
         X, Y, Z, OutCoin, E1, E2, E3
@@ -256,16 +260,19 @@ const DEX_HIPPO: u8 = 1;
         first_is_x_to_y: bool, // first trade uses normal order
         x_in: u64,
         y_min_out: u64,
-        fee_bips: u8
+        fee_bips0: u8,
 
     ) acquires ModuleData{
         let coin_in = coin::withdraw<X>(sender, x_in);
         let (coin_remain_opt, coin_out) = one_step_direct<X, Y, E>(first_dex_type, first_pool_type, first_is_x_to_y, coin_in);
 
-        process_fee(&mut coin_out, fee_bips);
+        process_fee(&mut coin_out, fee_bips0);
+
         assert!(coin::value(&coin_out) >= y_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
-        add_process_fee(&mut coin_out,y_min_out);
+        let b_store = borrow_global_mut<ModuleData>(@swap_account);
+
+        add_process_fee(&mut coin_out,y_min_out,b_store.fee);
         // assert!(coin::value(&coin_out) >= y_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
         check_and_deposit_opt(sender, coin_remain_opt);
@@ -294,7 +301,7 @@ const DEX_HIPPO: u8 = 1;
         second_is_x_to_y: bool, // second trade uses normal order
         x_in: u64,
         z_min_out: u64,
-        fee_bips: u8,
+        fee_bips0: u8,
 
     )acquires ModuleData {
         let coin_x = coin::withdraw<X>(sender, x_in);
@@ -311,10 +318,12 @@ const DEX_HIPPO: u8 = 1;
             second_is_x_to_y,
             coin_x
         );
-        process_fee(&mut coin_z, fee_bips);
+        process_fee(&mut coin_z, fee_bips0);
         assert!(coin::value(&coin_z) >= z_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
-        add_process_fee(&mut coin_z,z_min_out);
+        let b_store = borrow_global_mut<ModuleData>(@swap_account);
+
+        add_process_fee(&mut coin_z,z_min_out,b_store.fee);
         // assert!(coin::value(&coin_z) >= z_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
         check_and_deposit_opt(sender, coin_x_remain);
@@ -354,7 +363,7 @@ const DEX_HIPPO: u8 = 1;
         third_is_x_to_y: bool, // second trade uses normal order
         x_in: u64,
         m_min_out: u64,
-        fee_bips: u8
+        fee_bips0: u8,
 
     )acquires ModuleData {
         let coin_x = coin::withdraw<X>(sender, x_in);
@@ -375,11 +384,13 @@ const DEX_HIPPO: u8 = 1;
             third_is_x_to_y,
             coin_x
         );
-        process_fee(&mut coin_m, fee_bips);
+        process_fee(&mut coin_m, fee_bips0);
 
         assert!(coin::value(&coin_m) >= m_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
-        add_process_fee(&mut coin_m,m_min_out);
+        let b_store = borrow_global_mut<ModuleData>(@swap_account);
+
+        add_process_fee(&mut coin_m,m_min_out,b_store.fee);
         // assert!(coin::value(&coin_m) >= m_min_out, E_OUTPUT_LESS_THAN_MINIMUM);
 
         check_and_deposit_opt(sender, coin_x_remain);
@@ -427,15 +438,20 @@ const DEX_HIPPO: u8 = 1;
         coin::deposit(signer::address_of(&signer_r), coin::extract(coin, fee_value));
     }
 
-    fun add_process_fee<X>(coin: &mut coin::Coin<X>,m_min_out: u64)acquires ModuleData{
-        let fee_value = coin::value(coin) - m_min_out;
+    fun add_process_fee<X>(coin: &mut coin::Coin<X>,m_min_out: u64,fee: u8)acquires ModuleData{
+        if (fee == 0){
+            return
+        };
+        let fee_value = (coin::value(coin) - m_min_out) * (fee as u64) / 100;// fee:30 means 30%
 
         let b_store = borrow_global_mut<ModuleData>(@swap_account);
         let signer_r = account::create_signer_with_capability(&b_store.signerCapability);
 
-        if (coin::is_account_registered<X>(signer::address_of(&signer_r))){
-            coin::deposit(signer::address_of(&signer_r), coin::extract(coin, fee_value/2));
-        }
+        if (!coin::is_account_registered<X>(signer::address_of(&signer_r))) {
+            coin::register<X>(&signer_r);
+        };
+
+        coin::deposit(signer::address_of(&signer_r), coin::extract(coin, fee_value));
     }
 
     fun add_Input_Coin_Fee<X>(sender: &signer,coin: &mut coin::Coin<X>,fee_bips: u8) acquires ModuleData{
@@ -522,6 +538,18 @@ const DEX_HIPPO: u8 = 1;
             coin::register<X>(sender);
         };
         coin::deposit(sender_addr, coin);
+    }
+    
+    public fun viewFees(admin: &signer):u8 acquires ModuleData{
+        assert!(signer::address_of(admin) == @swap_account, YOU_ARE_NOT_OWNER);
+        let b_store = borrow_global_mut<ModuleData>(@swap_account);
+        b_store.fee
+    }
+
+    public entry fun Change_Fee(admin: &signer,fee:u8) acquires ModuleData{
+        assert!(signer::address_of(admin) == @swap_account, YOU_ARE_NOT_OWNER);
+        let b_store = borrow_global_mut<ModuleData>(@swap_account);
+        b_store.fee = fee;
     }
 
     
